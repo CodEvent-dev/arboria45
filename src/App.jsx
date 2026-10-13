@@ -9,14 +9,14 @@ import Footer from './components/Footer'
 
 export default function App() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-ink">
-      <Atmosphere />
+    <div className="min-h-screen overflow-x-hidden bg-linen">
       <Navbar />
       <main>
         <Hero />
         <Expertise />
-        <Gallery />
         <Philosophy />
+        <Gallery />
+        <Atmosphere />
         <Contact />
       </main>
       <Footer />

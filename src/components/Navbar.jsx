@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 
 const links = [
-  { href: '#expertise', label: 'Expertise' },
+  { href: '#expertise', label: 'Savoir-faire' },
+  { href: '#histoire', label: 'Histoire' },
   { href: '#realisations', label: 'Réalisations' },
-  { href: '#philosophie', label: 'Philosophie' },
+  { href: '#avis', label: 'Avis' },
 ]
 
 export default function Navbar() {
@@ -34,8 +35,8 @@ export default function Navbar() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3 lg:px-8 lg:py-4">
         <a
           href="#accueil"
-          className="group flex items-center drop-shadow-[0_2px_12px_rgba(11,18,14,0.55)]"
-          aria-label="Arboria 45, retour à l'accueil"
+          className="group flex items-center drop-shadow-[0_2px_12px_rgba(18,38,28,0.55)]"
+          aria-label="Arboria45, retour à l'accueil"
           onClick={() => setOpen(false)}
         >
           <img

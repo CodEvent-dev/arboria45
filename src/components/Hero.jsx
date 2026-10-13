@@ -1,47 +1,39 @@
-const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=2400&q=80'
+import { Phone } from 'lucide-react'
 
 export default function Hero() {
   return (
     <section id="accueil" className="relative isolate min-h-[100svh] overflow-hidden">
       <img
-        src={HERO_IMAGE}
-        alt="Jardin contemporain soigneusement dessiné, allées de buis et pelouse sculptée"
-        className="kenburns absolute inset-0 h-full w-full object-cover"
+        src="/hero-albizia.jpg"
+        alt="Albizia en fleur, feuillage soyeux et inflorescences roses"
+        className="absolute inset-0 h-full w-full object-cover object-center"
       />
-      <div className="absolute inset-0 bg-ink/15" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-ink/35 to-ink/[0.92]" />
-      <div className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-ink via-ink/80 to-transparent" />
+      <div className="absolute inset-0 bg-forest-deep/25" />
+      <div className="absolute inset-0 bg-gradient-to-t from-forest-deep/85 via-forest-deep/35 to-forest-deep/20" />
 
       <div className="hero-copy relative mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-end px-5 pb-24 pt-32 lg:px-8 lg:pb-28">
-        <p className="section-kicker drop-shadow-[0_2px_12px_rgba(11,18,14,0.85)]">Jargeau · Loiret</p>
-        <h1 className="mt-7 max-w-4xl font-serif text-[2.6rem] font-normal leading-[1.08] text-cream drop-shadow-[0_4px_28px_rgba(11,18,14,0.75)] sm:text-6xl lg:text-[5.1rem]">
-          L&apos;art de sublimer vos espaces extérieurs.
-        </h1>
-        <p className="mt-8 max-w-lg text-sm font-light leading-relaxed tracking-wide text-cream drop-shadow-[0_2px_16px_rgba(11,18,14,0.9)] sm:text-base">
-          Conception, création et aménagement de paysages sur-mesure pour particuliers et
-          professionnels exigeants.
+        <p className="section-kicker text-blush">
+          Conception paysagiste · Élagage · Arboriste grimpeur
         </p>
-        <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:items-center">
-          <a href="#contact" className="btn-gold">
-            Demander une étude
+        <h1 className="mt-6 max-w-4xl font-serif text-[3.2rem] font-normal leading-[1.02] text-cream sm:text-7xl lg:text-[5.2rem]">
+          Arboria45
+        </h1>
+        <p className="mt-3 font-serif text-2xl italic text-blush sm:text-3xl">
+          De la cime à la racine
+        </p>
+        <p className="mt-7 max-w-md text-sm font-light leading-relaxed text-cream/90 sm:text-base">
+          Élagueur-grimpeur passionné et aménagement paysager à Jargeau et dans un rayon de 25 km.
+        </p>
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <a href="tel:+33637234405" className="btn-gold">
+            <Phone size={14} />
+            06 37 23 44 05
           </a>
-          <a href="#realisations" className="btn-outline">
-            Découvrir
-            <span aria-hidden="true">→</span>
+          <a href="#contact" className="btn-outline">
+            Demander un devis
           </a>
         </div>
       </div>
-
-      <a
-        href="#expertise"
-        className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-3 text-[10px] uppercase tracking-[0.4em] text-cream/70 transition-colors hover:text-blush md:flex"
-      >
-        Explorer
-        <span className="relative h-12 w-px overflow-hidden bg-cream/20">
-          <span className="scroll-line absolute inset-x-0 top-0 h-full origin-top bg-blush" />
-        </span>
-      </a>
     </section>
   )
 }

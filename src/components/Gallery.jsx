@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Reveal from './Reveal'
 
 const projects = [
   {
     id: 'a',
     n: '01',
-    before: '/realisations/a2-avant.png',
-    after: '/realisations/a1-apres.png',
+    before: '/realisations/a1-avant.png',
+    after: '/realisations/a2-apres.png',
   },
   {
     id: 'b',
@@ -41,24 +40,42 @@ const projects = [
   },
 ]
 
-const PER_PAGE = 3
-const PAGE_COUNT = Math.ceil(projects.length / PER_PAGE)
+const DESKTOP_QUERY = '(min-width: 1024px)'
+const TABLET_UP_QUERY = '(min-width: 640px)'
+const HOVER_QUERY = '(hover: hover) and (pointer: fine)'
+const AUTOPLAY_MS = 5600
+const SWIPE_PAUSE_MS = 8000
 
-function useCanHover() {
-  const [canHover, setCanHover] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+function useMedia(query, initial) {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === 'undefined') return initial
+    return window.matchMedia(query).matches
   })
 
   useEffect(() => {
-    const media = window.matchMedia('(hover: hover) and (pointer: fine)')
-    const onChange = () => setCanHover(media.matches)
+    const media = window.matchMedia(query)
+    const onChange = () => setMatches(media.matches)
     onChange()
     media.addEventListener('change', onChange)
     return () => media.removeEventListener('change', onChange)
-  }, [])
+  }, [query])
 
-  return canHover
+  return matches
+}
+
+function ThinArrow({ direction }) {
+  const isPrev = direction === 'prev'
+  return (
+    <svg width="16" height="44" viewBox="0 0 16 44" fill="none" aria-hidden="true">
+      <path
+        d={isPrev ? 'M14.5 1.5 L1.5 22 L14.5 42.5' : 'M1.5 1.5 L14.5 22 L1.5 42.5'}
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
 }
 
 function BeforeAfterCard({ project, index, canHover }) {
@@ -119,7 +136,9 @@ function BeforeAfterCard({ project, index, canHover }) {
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 p-6 sm:p-7">
         <p className="font-serif text-2xl text-blush">{project.n}</p>
-        <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.32em] text-cream">{label}</p>
+        <p className="mt-2 inline-flex rounded-sm bg-blush/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-forest">
+          {label}
+        </p>
         <div className="mt-5 h-px w-8 bg-mist transition-all duration-700 ease-luxe group-hover:w-16" />
       </div>
     </figure>
@@ -127,73 +146,131 @@ function BeforeAfterCard({ project, index, canHover }) {
 }
 
 export default function Gallery() {
-  const canHover = useCanHover()
+  const isDesktop = useMedia(DESKTOP_QUERY, true)
+  const isTabletUp = useMedia(TABLET_UP_QUERY, true)
+  const canHover = useMedia(HOVER_QUERY, true)
+  const perPage = isTabletUp ? 3 : 1
+  const pageCount = Math.ceil(projects.length / perPage)
+  const pageCountRef = useRef(pageCount)
+  pageCountRef.current = pageCount
+
   const [page, setPage] = useState(0)
   const [direction, setDirection] = useState('next')
-  const touchX = useRef(null)
+  const touchStart = useRef(null)
+  const pauseUntil = useRef(0)
+  const inView = useRef(true)
+  const scrollerRef = useRef(null)
 
-  const visible = projects.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
+  const visible = projects.slice(page * perPage, page * perPage + perPage)
 
-  const go = (nextDirection) => {
+  const go = useCallback((nextDirection) => {
     setDirection(nextDirection)
     setPage((current) => {
+      const count = pageCountRef.current
       const step = nextDirection === 'next' ? 1 : -1
-      return (current + step + PAGE_COUNT) % PAGE_COUNT
+      return (current + step + count) % count
     })
+  }, [])
+
+  const pauseAutoplay = useCallback(() => {
+    pauseUntil.current = Date.now() + SWIPE_PAUSE_MS
+  }, [])
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, Math.max(pageCount - 1, 0)))
+  }, [pageCount])
+
+  useEffect(() => {
+    const node = scrollerRef.current
+    if (!node) return undefined
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        inView.current = entry.isIntersecting
+      },
+      { threshold: 0.35 },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (isDesktop) return undefined
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce) return undefined
+
+    const intervalId = window.setInterval(() => {
+      if (!inView.current) return
+      if (Date.now() < pauseUntil.current) return
+      go('next')
+    }, AUTOPLAY_MS)
+
+    return () => window.clearInterval(intervalId)
+  }, [isDesktop, go])
+
+  const onTouchStart = (event) => {
+    const touch = event.changedTouches[0]
+    touchStart.current = { x: touch.clientX, y: touch.clientY }
+  }
+
+  const onTouchEnd = (event) => {
+    if (!touchStart.current) return
+    const touch = event.changedTouches[0]
+    const dx = touch.clientX - touchStart.current.x
+    const dy = touch.clientY - touchStart.current.y
+    touchStart.current = null
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.15) return
+    pauseAutoplay()
+    go(dx < 0 ? 'next' : 'prev')
   }
 
   return (
-    <section id="realisations" className="bg-ink py-24 text-cream lg:py-32">
+    <section id="realisations" className="bg-forest-deep py-24 text-cream lg:py-32">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <Reveal>
-            <p className="section-kicker">Chantiers</p>
-            <div className="gold-rule mt-6" />
-            <h2 className="mt-8 font-serif text-4xl font-normal leading-[1.08] sm:text-5xl lg:text-[3.5rem]">
-              Galerie de réalisations
+            <h2 className="font-serif text-4xl font-normal leading-[1.08] sm:text-5xl">
+              Avant / Après
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-sm font-light leading-relaxed text-cream/65 sm:text-base">
-              Chaque chantier se lit en deux temps : l&apos;état des lieux, puis le jardin après
-              intervention.
+              {isDesktop
+                ? 'Survolez une photo pour révéler l’après — élagage, taille et aménagements autour de Jargeau.'
+                : 'Glissez pour parcourir. Les photos défilent aussi toutes seules — élagage, taille et aménagements autour de Jargeau.'}
             </p>
           </Reveal>
         </div>
 
         <div
-          className="relative mt-16"
-          onTouchStart={(event) => {
-            touchX.current = event.changedTouches[0].clientX
-          }}
-          onTouchEnd={(event) => {
-            if (touchX.current == null) return
-            const delta = event.changedTouches[0].clientX - touchX.current
-            if (delta > 48) go('prev')
-            if (delta < -48) go('next')
-            touchX.current = null
-          }}
+          ref={scrollerRef}
+          className="relative mt-16 touch-pan-y select-none"
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
         >
-          <button
-            type="button"
-            onClick={() => go('prev')}
-            aria-label="Réalisations précédentes"
-            className="absolute left-0 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center border border-cream/20 text-cream transition duration-500 hover:border-blush hover:text-blush"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <button
-            type="button"
-            onClick={() => go('next')}
-            aria-label="Réalisations suivantes"
-            className="absolute right-0 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center border border-cream/20 text-cream transition duration-500 hover:border-blush hover:text-blush"
-          >
-            <ChevronRight size={20} />
-          </button>
+          {isDesktop ? (
+            <>
+              <button
+                type="button"
+                onClick={() => go('prev')}
+                aria-label="Réalisations précédentes"
+                className="absolute -left-1 top-1/2 z-10 flex h-24 w-10 -translate-y-1/2 items-center justify-center text-cream/55 transition duration-500 hover:text-blush lg:-left-3"
+              >
+                <ThinArrow direction="prev" />
+              </button>
+              <button
+                type="button"
+                onClick={() => go('next')}
+                aria-label="Réalisations suivantes"
+                className="absolute -right-1 top-1/2 z-10 flex h-24 w-10 -translate-y-1/2 items-center justify-center text-cream/55 transition duration-500 hover:text-blush lg:-right-3"
+              >
+                <ThinArrow direction="next" />
+              </button>
+            </>
+          ) : null}
 
           <div
-            key={`${page}-${direction}`}
-            className={`grid grid-cols-1 gap-4 px-14 sm:grid-cols-3 sm:gap-5 sm:px-16 ${
-              direction === 'next' ? 'gallery-enter-next' : 'gallery-enter-prev'
-            }`}
+            key={`${page}-${direction}-${perPage}`}
+            className={`grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5 ${
+              isDesktop ? 'px-10 lg:px-12' : 'px-0'
+            } ${direction === 'next' ? 'gallery-enter-next' : 'gallery-enter-prev'}`}
           >
             {visible.map((project, index) => (
               <BeforeAfterCard
@@ -207,7 +284,7 @@ export default function Gallery() {
         </div>
 
         <div className="mt-10 flex items-center justify-center gap-3" role="tablist" aria-label="Pages de la galerie">
-          {Array.from({ length: PAGE_COUNT }, (_, index) => {
+          {Array.from({ length: pageCount }, (_, index) => {
             const active = index === page
             return (
               <button
@@ -217,6 +294,7 @@ export default function Gallery() {
                 aria-selected={active}
                 aria-label={`Page ${index + 1}`}
                 onClick={() => {
+                  pauseAutoplay()
                   setDirection(index >= page ? 'next' : 'prev')
                   setPage(index)
                 }}
